@@ -71,6 +71,7 @@ from insights.specs.datasources import (
     mdadm,
     mount as mount_ds,
     package_provides,
+    podman,
     ps,
     rpm,
     sap,
@@ -672,6 +673,7 @@ class DefaultSpecs(Specs):
     )
     podman_list_containers = simple_command("/usr/bin/podman ps --all --no-trunc")
     podman_ps_all_json = simple_command("/usr/bin/podman ps --all --no-trunc --size --format=json")
+    podman_ps_all_json_rootless = podman.podman_ps_all_json_rootless
     podman_system_info = simple_command("/usr/bin/podman system info --format=json")
     postconf = simple_command("/usr/sbin/postconf")
     postconf_builtin = simple_command("/usr/sbin/postconf -C builtin")
