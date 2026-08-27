@@ -6,6 +6,9 @@ This module contains the following parsers:
 
 PodmanPsAllJson - command ``podman ps --all --no-trunc --size --format=json``
 -----------------------------------------------------------------------------
+
+PodmanPsAllJsonRootless - datasource ``podman_ps_all_json_rootless``
+--------------------------------------------------------------------
 """
 
 from typing import List
@@ -133,6 +136,32 @@ class PodmanPsAllJson(JSONParser, PodmanContainerSearch):
         ['angry_saha']
         >>> len(podman_ps_json.search_by_image("httpd", partial=True))
         1
+    """
+
+    pass
+
+
+@parser(Specs.podman_ps_all_json_rootless)
+class PodmanPsAllJsonRootless(JSONParser, PodmanContainerSearch):
+    """
+    Parses the aggregated rootless ``podman ps --all --no-trunc --format=json``
+    json produced by the
+    :py:func:`insights.specs.datasources.podman.podman_ps_all_json_rootless`
+    datasource.
+
+    The collected content is a flat list of raw podman container jsons (from all
+    rootless users combined); the owning username is not persisted.
+
+    Attributes:
+        data (list): Flat list of all rootless container dicts (raw, unmodified).
+
+    Examples:
+        >>> type(podman_ps_rootless.data)
+        <class 'list'>
+        >>> len(podman_ps_rootless.data)
+        3
+        >>> podman_ps_rootless.search_by_name("foreman")[0]["Id"]
+        'a1'
     """
 
     pass

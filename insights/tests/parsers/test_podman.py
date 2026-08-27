@@ -1,7 +1,7 @@
 import doctest
 
 from insights.parsers import podman
-from insights.parsers.podman import PodmanPsAllJson
+from insights.parsers.podman import PodmanPsAllJson, PodmanPsAllJsonRootless
 from insights.tests import context_wrap
 
 PODMAN_PS_ALL_JSON = """
@@ -223,8 +223,40 @@ def test_podman_ps_search_by_image_multiple():
     assert len(partial) == 3
 
 
+ROOTLESS_FLAT = """
+[
+    {"Id": "a1", "Image": "quay.io/foreman/foreman:3.16", "Names": ["foreman"], "State": "running"},
+    {"Id": "a2", "Image": "quay.io/sclorg/postgresql-13-c9s:latest", "Names": ["postgresql"], "State": "running"},
+    {"Id": "b1", "Image": "registry.redhat.io/ansible-automation-platform-27/receptor:latest", "Names": ["receptor"], "State": "exited"}
+]
+""".strip()
+
+
+def test_podman_ps_all_json_rootless_parse():
+    result = PodmanPsAllJsonRootless(context_wrap(ROOTLESS_FLAT))
+    # flat data across all rootless users
+    assert isinstance(result.data, list)
+    assert len(result.data) == 3
+    assert sorted(c["Id"] for c in result.data) == ["a1", "a2", "b1"]
+
+
+def test_podman_ps_all_json_rootless_search():
+    result = PodmanPsAllJsonRootless(context_wrap(ROOTLESS_FLAT))
+    # inherited search works over the flat data
+    foreman = result.search_by_name("foreman")
+    assert len(foreman) == 1
+    assert foreman[0]["Id"] == "a1"
+    aap = result.search_by_image("ansible-automation-platform", partial=True)
+    assert len(aap) == 1
+    assert aap[0]["Id"] == "b1"
+
+
 def test_podman_ps_json_documentation():
     failed_count, _ = doctest.testmod(
-        podman, globs={'podman_ps_json': PodmanPsAllJson(context_wrap(PODMAN_PS_ALL_JSON))}
+        podman,
+        globs={
+            'podman_ps_json': PodmanPsAllJson(context_wrap(PODMAN_PS_ALL_JSON)),
+            'podman_ps_rootless': PodmanPsAllJsonRootless(context_wrap(ROOTLESS_FLAT)),
+        },
     )
     assert failed_count == 0
