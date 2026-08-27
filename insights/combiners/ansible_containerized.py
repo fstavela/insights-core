@@ -9,25 +9,26 @@ Combiner to collect data about a containerized Ansible Automation Platform
 from typing import List
 
 from insights.core.plugins import combiner
-from insights.parsers.podman import PodmanPsAllJson
+from insights.combiners.podman_containers import PodmanContainers
 
 AAP_IMAGE_MARKER = "ansible-automation-platform"
 
 
-@combiner(PodmanPsAllJson)
+@combiner(PodmanContainers)
 class AnsibleContainerized(object):
     """
-    Collects the AAP containers from the root-owned podman containers
-    (``PodmanPsAllJson``).
+    Collects the AAP containers from the merged podman containers
+    (``PodmanContainers``, combining root and rootless).
 
     Containers are matched by image: any container whose image contains
     ``ansible-automation-platform``. This captures the whole AAP stack
     (gateway, controller, receptor, eda, hub, metrics, ...) including the
     execution-node case where ``receptor`` may be the only AAP container.
 
-    ``PodmanPsAllJson`` is a required dependency, so this combiner only runs
-    when the podman containers were collected. When it runs but no AAP
-    containers are present, ``containers`` is an empty list.
+    ``PodmanContainers`` is a required dependency, so this combiner only runs
+    when podman containers were collected (it merges rootful and rootless and
+    itself skips when neither is present). When it runs but no AAP containers
+    are present, ``containers`` is an empty list.
 
     Attributes:
         containers (list): The raw podman jsons for the AAP containers
@@ -40,5 +41,5 @@ class AnsibleContainerized(object):
         2
     """
 
-    def __init__(self, podman_ps: PodmanPsAllJson) -> None:
+    def __init__(self, podman_ps: PodmanContainers) -> None:
         self.containers: List[dict] = podman_ps.search_by_image(AAP_IMAGE_MARKER, partial=True)

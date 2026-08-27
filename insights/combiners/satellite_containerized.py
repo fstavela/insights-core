@@ -10,14 +10,14 @@ from typing import List, Optional
 from insights.core.exceptions import SkipComponent
 from insights.core.plugins import combiner
 from insights.parsers.installed_rpms import InstalledRpms
-from insights.parsers.podman import PodmanPsAllJson
+from insights.combiners.podman_containers import PodmanContainers
 
 FOREMANCTL_PKG = "foremanctl"
 FOREMAN_CONTAINER = "foreman"
 FOREMAN_PROXY_CONTAINER = "foreman-proxy"
 
 
-@combiner(optional=[InstalledRpms, PodmanPsAllJson])
+@combiner(optional=[InstalledRpms, PodmanContainers])
 class SatelliteContainerized(object):
     """
     Collects data about a containerized Satellite deployment.
@@ -54,7 +54,7 @@ class SatelliteContainerized(object):
     def __init__(
         self,
         rpms: Optional[InstalledRpms],
-        podman_ps: Optional[PodmanPsAllJson],
+        podman_ps: Optional[PodmanContainers],
     ) -> None:
         if rpms is None and podman_ps is None:
             raise SkipComponent("Not a containerized Satellite: nothing collected")
