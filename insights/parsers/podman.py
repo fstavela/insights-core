@@ -8,12 +8,53 @@ PodmanPsAllJson - command ``podman ps --all --no-trunc --size --format=json``
 -----------------------------------------------------------------------------
 """
 
+from typing import List
+
 from insights import parser, JSONParser
 from insights.specs import Specs
 
 
+class PodmanContainerSearch(object):
+    """
+    Mixin providing container search helpers over a flat ``self.data`` list of
+    container dicts (as produced by ``podman ps ... --format=json``).
+    """
+
+    def search_by_name(self, name: str, partial: bool = False) -> List[dict]:
+        """
+        Search containers by name.
+
+        Args:
+            name (str): The container name to search for.
+            partial (bool): When ``False`` (default) match the name exactly;
+                when ``True`` match containers whose name contains ``name``.
+
+        Returns:
+            list: The matching raw container jsons (empty list if none match).
+        """
+        if partial:
+            return [c for c in self.data if any(name in n for n in c.get("Names", []))]
+        return [c for c in self.data if name in c.get("Names", [])]
+
+    def search_by_image(self, image: str, partial: bool = False) -> List[dict]:
+        """
+        Search containers by image.
+
+        Args:
+            image (str): The image to search for.
+            partial (bool): When ``False`` (default) match the image exactly;
+                when ``True`` match containers whose image contains ``image``.
+
+        Returns:
+            list: The matching raw container jsons (empty list if none match).
+        """
+        if partial:
+            return [c for c in self.data if image in c.get("Image", "")]
+        return [c for c in self.data if c.get("Image", "") == image]
+
+
 @parser(Specs.podman_ps_all_json)
-class PodmanPsAllJson(JSONParser):
+class PodmanPsAllJson(JSONParser, PodmanContainerSearch):
     """
     Class for parsing the output of the ``podman ps --all --no-trunc --size --format=json`` command.
 
@@ -86,5 +127,12 @@ class PodmanPsAllJson(JSONParser):
         ['angry_saha']
         >>> podman_ps_json.data[0]["Image"]
         'rhel7_httpd'
+        >>> len(podman_ps_json.search_by_name("angry_saha"))
+        1
+        >>> podman_ps_json.search_by_image("rhel7_httpd")[0]["Names"]
+        ['angry_saha']
+        >>> len(podman_ps_json.search_by_image("httpd", partial=True))
+        1
     """
+
     pass
