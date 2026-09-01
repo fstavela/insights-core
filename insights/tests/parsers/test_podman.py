@@ -1,5 +1,7 @@
 import doctest
 
+import pytest
+
 from insights.parsers import podman
 from insights.parsers.podman import PodmanPsAllJson
 from insights.tests import context_wrap
@@ -220,6 +222,23 @@ def test_podman_ps_search_by_image_multiple():
     # partial match on "foreman" returns all three
     partial = result.search_by_image("foreman", partial=True)
     assert len(partial) == 3
+
+
+def test_podman_ps_search_invalid_argument():
+    result = PodmanPsAllJson(context_wrap(PODMAN_PS_ALL_JSON))
+
+    # non-string search terms raise TypeError
+    for bad in (None, 123, ["angry_saha"]):
+        with pytest.raises(TypeError):
+            result.search_by_name(bad)
+        with pytest.raises(TypeError):
+            result.search_by_image(bad)
+
+    # empty search terms raise ValueError
+    with pytest.raises(ValueError):
+        result.search_by_name("")
+    with pytest.raises(ValueError):
+        result.search_by_image("")
 
 
 def test_podman_ps_json_documentation():

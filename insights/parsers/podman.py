@@ -20,6 +20,24 @@ class PodmanContainerSearch(object):
     container dicts (as produced by ``podman ps ... --format=json``).
     """
 
+    @staticmethod
+    def _validate_search_term(value, arg_name: str) -> None:
+        """
+        Validate a search term.
+
+        Args:
+            value: The value to validate.
+            arg_name (str): The argument name, used in error messages.
+
+        Raises:
+            TypeError: If ``value`` is not a string.
+            ValueError: If ``value`` is an empty string.
+        """
+        if not isinstance(value, str):
+            raise TypeError("{0} must be a string, got {1}".format(arg_name, type(value).__name__))
+        if not value:
+            raise ValueError("{0} must not be empty".format(arg_name))
+
     def search_by_name(self, name: str, partial: bool = False) -> List[dict]:
         """
         Search containers by name.
@@ -31,7 +49,12 @@ class PodmanContainerSearch(object):
 
         Returns:
             list: The matching raw container jsons (empty list if none match).
+
+        Raises:
+            TypeError: If ``name`` is not a string.
+            ValueError: If ``name`` is an empty string.
         """
+        self._validate_search_term(name, "name")
         if partial:
             return [c for c in self.data if any(name in n for n in c.get("Names", []))]
         return [c for c in self.data if name in c.get("Names", [])]
@@ -47,7 +70,12 @@ class PodmanContainerSearch(object):
 
         Returns:
             list: The matching raw container jsons (empty list if none match).
+
+        Raises:
+            TypeError: If ``image`` is not a string.
+            ValueError: If ``image`` is an empty string.
         """
+        self._validate_search_term(image, "image")
         if partial:
             return [c for c in self.data if image in c.get("Image", "")]
         return [c for c in self.data if c.get("Image", "") == image]
