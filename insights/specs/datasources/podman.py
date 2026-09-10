@@ -18,7 +18,7 @@ from insights.core.exceptions import SkipComponent
 from insights.core.plugins import datasource
 from insights.core.spec_factory import DatasourceProvider, foreach_execute
 from insights.specs import Specs
-from insights.specs.datasources import DEFAULT_SHELL_TIMEOUT
+from insights.specs.datasources import DEFAULT_SHELL_TIMEOUT, is_safe_username
 from insights.specs.datasources.user_group import all_users
 
 ROOTLESS_STORAGE_SUBPATH = ".local/share/containers/storage"
@@ -39,6 +39,10 @@ def _get_rootless_podman_users(entries) -> List[str]:
         name = entry.pw_name
         home = entry.pw_dir
         if name == "root" or not home or home == "/":
+            continue
+        # The username is later interpolated into a command run as root; drop
+        # any name that could forge extra argv tokens (argument injection).
+        if not is_safe_username(name):
             continue
         storage = os.path.join(home, ROOTLESS_STORAGE_SUBPATH)
         try:
