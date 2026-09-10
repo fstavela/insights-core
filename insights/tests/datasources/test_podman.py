@@ -98,6 +98,31 @@ def test_podman_ps_all_json_rootless():
     assert json.loads("".join(result.content)) == expected
 
 
+def test_podman_ps_all_json_rootless_skips_bad_shapes():
+    # A valid-but-unexpected JSON shape from one user (null, a single object, or
+    # a list containing non-dicts) must be skipped, not abort aggregation for
+    # the other users.
+    null_out = Mock()
+    null_out.args = "alice"
+    null_out.content = ["null"]  # podman may emit null for "empty"
+    single_obj = Mock()
+    single_obj.args = "bob"
+    single_obj.content = ['{"Id": "x", "Labels": {"s": 1}}']  # object, not a list
+    dirty_list = Mock()
+    dirty_list.args = "carol"
+    dirty_list.content = ['[null, "str", {"Id": "c1", "Names": ["ok"]}]']  # mixed
+    good = Mock()
+    good.args = "dave"
+    good.content = [ALICE_PS]
+
+    broker = {LocalSpecs.podman_ps_rootless_raw: [null_out, single_obj, dirty_list, good]}
+    result = podman_ps_all_json_rootless(broker)
+
+    containers = json.loads("".join(result.content))
+    # only the dict from the mixed list and the good user's container survive
+    assert sorted(c["Id"] for c in containers) == ["a1", "c1"]
+
+
 def test_podman_ps_all_json_rootless_skip_when_empty():
     empty = Mock()
     empty.args = "carol"

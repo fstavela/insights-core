@@ -95,6 +95,12 @@ def podman_ps_all_json_rootless(broker) -> DatasourceProvider:
             containers = json.loads("\n".join(item.content))
         except ValueError:
             continue
+        # ``podman ps --format=json`` should yield a list of container dicts, but
+        # a valid-but-unexpected shape (e.g. ``null`` or a single object) from one
+        # user must not abort aggregation for everyone else.
+        if not isinstance(containers, list):
+            continue
+        containers = [c for c in containers if isinstance(c, dict)]
         for container in containers:
             # Labels may contain sensitive information; never persist them.
             container.pop("Labels", None)
